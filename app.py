@@ -1,9 +1,13 @@
 from flask import Flask, render_template, session, request, redirect, url_for, Response
 import os # It is used for making tokens. 
+from pref_question import pref_location
 from typing import Any, Dict, List, Tuple, Optional, Union # This is for type hints
-# Union: Allows you to specify multiple types for a variable. 
+
+# Union: Allows you to specify multiple types for a variable.
 # For example, Union[int, str] means the variable can be an integer or a string.
 from werkzeug.wrappers import Response as WerkzeugResponse
+
+from pref_question import pref_location
 
 #Make a Flask instance
 app = Flask(__name__)
@@ -56,7 +60,37 @@ def logincheck() -> Union[str, WerkzeugResponse]:
     else:
         return redirect(url_for("login"))
 
+@app.route("/pref_quiz", methods=["GET", "POST"])
+def pref_quiz() -> Union[str, WerkzeugResponse]:
+    random_pref: str
+    city_name: str
+    pref_url: str
+
+    random_pref, city_name, pref_url = pref_location()
+    #Store to session for using other pages
+    session["prefecture"] = random_pref
+    session["city"] = city_name
+    session["url"] = pref_url
+    # sending prefecture name to quiz.html and it will display {{prefecture}}
+    return render_template("quiz.html", prefecture=random_pref)
+
+@app.route("/answercheck", methods=["POST"])
+def answercheck() -> Union[str, WerkzeugResponse]:
+    user_answer: str = request.form['city']
+    prefecture: str =  session.get('prefecture')
+    city: str = session.get('city')
+    url: str = session.get('url')
+
+    if user_answer == city:
+        result: str = "Correct!"
+    else:
+        result: str = "Wrong!"
+    return render_template("result.html", result=result, prefecture=prefecture, city=city, url=url)
+
+
 
 #Launch this app
 if __name__ == "__main__":
-	app.run(debug=True)
+    # print("Starting minimal Flask app...")
+    # print(app.url_map)
+    app.run(debug=True)
